@@ -17,13 +17,9 @@
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: white;
+  @apply min-h-screen;
+  background: linear-gradient(to bottom, black, #0D1A3B);  
 }
 
 @layer utilities {
