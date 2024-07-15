@@ -5,7 +5,8 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { gql, useLazyQuery } from "@apollo/client";
 import { useRouter } from 'next/navigation';
-import { Button, TextField } from "@mui/material";
+import { Button, FormLabel, IconButton, InputAdornment, TextField } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const schema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
@@ -56,48 +57,60 @@ function LoginForm() {
 
   return (
     <div className="flex justify-center items-center min-h-screen ">
-      <div className="w-4/12 bg-white rounded-lg p-10 text-black">
+      <div className="w-4/12 bg-white rounded-lg p-7 text-black">
         <h1 className="text-3xl flex justify-center">Welcome</h1>
-        <p className="text-gray-400 text-xs flex justify-center">Please log in to your account</p>
+        <p className="text-gray-400 text-xs flex justify-center my-3">Please log in to your account</p>
         <form onSubmit={handleSubmit(onSubmit)}>
+        <FormLabel sx={{
+          color: 'black',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          Email Address</FormLabel>
         <TextField
-            label="Email Address"
             type="email"
             placeholder="example@company.com"
             fullWidth
-            margin="normal"
-            variant="standard"
+            margin="none"
+            variant="standard"            
             error={!!errors.email}
             helperText={errors.email ? errors.email.message : ''}
             {...register("email")}
           />
           <div className="relative">
+          <FormLabel sx={{
+          color: 'black',
+          fontSize: '14px',
+          fontWeight: 'bold',
+        }}>
+          Password</FormLabel>
+
             <TextField
-              label="Password"
               type={passwordVisible ? "text" : "password"}
               placeholder="********"
               fullWidth
-              margin="normal"
+              margin="none"
               variant="standard"
               error={!!errors.password}
               helperText={errors.password ? errors.password.message : ''}
               {...register("password")}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={togglePasswordVisibility} edge="end">
+                      {passwordVisible ? <Visibility /> : <VisibilityOff />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute top-2/4 right-0"
-            >
-              {passwordVisible ? (
-                <ion-icon name="eye-outline" size="large"></ion-icon>
-              ) : (
-                <ion-icon name="eye-off-outline" size="large"></ion-icon>
-              )}
-            </button>
           </div>
           <br />
-          <a href="#" className="text-sm text-gray-500 hover:text-gray-700 flex justify-center">Forgot Password?</a>
-          <Button type="submit" variant="contained" color="primary" fullWidth>
+          <a href="#" className="text-xs text-gray-500 hover:text-gray-700 flex justify-center">Forgot Password?</a>
+          <Button type="submit" variant="contained"  fullWidth sx={{
+            marginTop:'15px',
+            backgroundColor: '#0060D1',
+            borderRadius: '10px'}}>
             Login
           </Button>        
           </form>
