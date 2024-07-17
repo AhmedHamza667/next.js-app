@@ -76,6 +76,15 @@ function LoginForm() {
             error={!!errors.email}
             helperText={errors.email ? errors.email.message : ''}
             {...register("email")}
+            InputProps={{
+              disableUnderline: true
+            }}
+            sx={{
+              borderBottom: '1px solid #dcdee0',
+              ":hover":{
+                border: 'none'
+              },              
+            }}
           />
           <div className="relative">
           <FormLabel sx={{
@@ -95,6 +104,7 @@ function LoginForm() {
               helperText={errors.password ? errors.password.message : ''}
               {...register("password")}
               InputProps={{
+                disableUnderline: true,
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={togglePasswordVisibility} edge="end">
@@ -102,6 +112,12 @@ function LoginForm() {
                     </IconButton>
                   </InputAdornment>
                 ),
+              }}
+              sx={{
+                borderBottom: '1px solid #dcdee0',
+                ":hover":{
+                  border: 'none'
+                },              
               }}
             />
           </div>

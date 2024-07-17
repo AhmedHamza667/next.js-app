@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { gql, useLazyQuery } from "@apollo/client";
 import {createCookie, deleteCookie} from '../(lib)/nookies'
 import { useRouter } from 'next/navigation';
-import { Button, TextField } from '@mui/material';
+import { Button, TextField, FormLabel } from '@mui/material';
 const schema = z.object({
     otp: z.string()
       .nonempty({ message: "OTP is required" })
@@ -60,22 +60,40 @@ function OTP() {
 
   return (
     <div className="flex justify-center items-center min-h-screen">
-      <div className="w-4/12 bg-white rounded-lg p-10 text-black">
+      <div className="w-4/12 bg-white rounded-lg p-7 text-black">
         <h1 className="text-3xl flex justify-center">Validate your Account</h1>
         <p className="text-gray-400 text-xs flex justify-center my-6">We have sent an OTP to your email address</p>
         <form onSubmit={handleSubmit(onSubmit)}>
+        <FormLabel sx={{
+          color: 'black',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          Email Address</FormLabel>
           <TextField
-            label="OTP"
             type="text"
             variant="standard"
             fullWidth
-            margin="normal"
+            margin="none"
             placeholder="OTP"
             error={!!errors.otp}
             helperText={errors.otp ? errors.otp.message : ''}
             {...register("otp")}
+            InputProps={{
+              disableUnderline: true
+            }}
+            sx={{
+              borderBottom: '1px solid #dcdee0',
+              ":hover":{
+                border: 'none'
+              },              
+            }}
           />
-          <Button type="submit" variant="contained" color="primary" fullWidth>
+          <Button type="submit" variant="contained" color="primary" fullWidth
+          sx={{
+            marginTop:'15px',
+            backgroundColor: '#0060D1',
+            borderRadius: '10px'}}>
             Continue
           </Button>
         </form>
