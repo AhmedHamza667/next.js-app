@@ -22,23 +22,25 @@ const LOGIN_BY_EMAIL = gql`
 query LoginByEmail($input: LoginByEmail!) {
   loginByEmail(input: $input) {
     message
+    resendOTPToken
   }
 }
 `;
 
 function LoginForm() {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, getValues } = useForm({
     resolver: zodResolver(schema)
   });
   const router = useRouter();
 
   const [loginByEmail, { data, loading, error }] = useLazyQuery(LOGIN_BY_EMAIL, {
     onCompleted: (data) => {
-        router.push('/otp'); // Redirect to dashboard or any other page
-      // else {
-      //   alert("Login failed. Please check your credentials.");
-      // }
+      if (data.loginByEmail) {
+        const { resendOTPToken } = data.loginByEmail;
+        const email = getValues("email");
+        router.push(`/otp?email=${encodeURIComponent(email)}&resendOtpToken=${encodeURIComponent(resendOTPToken)}`);
+      }
     },
     onError: (error) => {
       console.log(error.message);
