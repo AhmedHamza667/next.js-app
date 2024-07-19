@@ -7,7 +7,7 @@ import { gql, useLazyQuery } from "@apollo/client";
 import { useRouter } from 'next/navigation';
 import { Button, FormLabel, IconButton, InputAdornment, TextField } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-
+import { LOGIN_BY_EMAIL } from "@/app/(queries)/queries";
 const schema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
   password: z.string()
@@ -18,14 +18,7 @@ const schema = z.object({
     .regex(/[@$!%*?&]/, { message: "Password must contain at least one special character" })
 });
 
-const LOGIN_BY_EMAIL = gql`
-query LoginByEmail($input: LoginByEmail!) {
-  loginByEmail(input: $input) {
-    message
-    resendOTPToken
-  }
-}
-`;
+
 
 function LoginForm() {
   const [passwordVisible, setPasswordVisible] = useState(false);
