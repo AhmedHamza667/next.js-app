@@ -5,9 +5,12 @@ import { GET_ALL_USER } from '@/app/(queries)/queries'
 import { useQuery } from '@apollo/client';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import Paper from '@mui/material/Paper';
+import { parseCookies } from 'nookies';
 
 
 function Users() {
+  const cookies = parseCookies()
+  const token = cookies.accessToken;
 
   const { loading, error, data } = useQuery(GET_ALL_USER, {
     variables: {
@@ -23,7 +26,7 @@ function Users() {
     },
     context: {
       headers: {
-        Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjhkMzBlYjY0NDg5NTEyNzZjYzQ1OTgiLCJyb2xlIjoiQURNSU4iLCJkZXZpY2VEb2NJZCI6IjY2OWE2YjE4MWFlMTExM2U3NzlmMTBmNCIsImlhdCI6MTcyMTQ5NDAwOSwiZXhwIjoxNzIxNDk3NjA5fQ.xioArZsiQPTwdYSF4vZNccZGs8Maugswd8i8jvG5YjQ'
+        Authorization: `Bearer ${token}`
       }
     }
   });
