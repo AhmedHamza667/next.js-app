@@ -6,6 +6,9 @@ import { useQuery } from "@apollo/client";
 
 import {
   Box,
+  Button,
+  IconButton,
+  InputBase,
   Pagination,
   PaginationItem,
   Skeleton,
@@ -19,27 +22,36 @@ import {
 import Paper from "@mui/material/Paper";
 import { parseCookies } from "nookies";
 import { useRouter, useSearchParams } from "next/navigation";
+import { FilterList, Search } from "@mui/icons-material";
 function Users() {
   const router = useRouter();
   const cookies = parseCookies();
   const token = cookies.accessToken;
   const searchParams = useSearchParams();
-
+  const searchParam = searchParams.get("search");
   const pageNum = searchParams.get("page");
 
   const page = pageNum || 1;
 
   const [offset, setOffset] = useState((page - 1) * 10);
+  const [search, setSearch] = useState(searchParam);
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+    router.push(`/users?search=${event.target.value}&page=${page}`);
+
+  };
+
   const { loading, error, data, refetch } = useQuery(GET_ALL_USER, {
     variables: {
-      search: null,
+      search,
       filter: {},
       sort: {
         _id: -1,
       },
       limit: 10,
       offset,
-      getAllUserCountSearch2: null,
+      getAllUserCountSearch2: search || null,
       getAllUserCountFilter2: {},
     },
     context: {
@@ -52,10 +64,17 @@ function Users() {
     refetch();
   }, [offset, refetch]);
 
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      refetch();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [search, refetch]);
+
   if (loading) {
     return (
       <>
-        <Navbar />
         <Box
           sx={{
             display: "flex",
@@ -88,33 +107,53 @@ function Users() {
   };
   return (
     <div>
-      <Navbar />
-      <Box
-        sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}
-      >
-        <p>Total: {getAllUserCount}</p>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <input
-            type="text"
-            placeholder="Search"
-            style={{
-              padding: "0.5em",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            style={{
-              backgroundColor: "#0060D1",
-              color: "white",
-              padding: "0.5em 1em",
-              borderRadius: "10px",
-            }}
-          >
-            Add User
-          </button>
-        </Box>
-      </Box>
+    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}>
+  <p>Total: {getAllUserCount}</p>
+  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        backgroundColor: "#2C3757",
+        borderRadius: "20px",
+        py: "2px",
+        px: 2,
+        color: "white",
+        width: "55vh",
+      }}
+    >
+      <Search sx={{ ml: 1 }} />
+      <InputBase
+        onChange={handleSearchChange}
+        placeholder="Search"
+        value={search}
+
+        sx={{
+          mx: 1,
+          flex: 1,
+          color: "white",
+          '&::placeholder': { color: "white" },
+        }}
+      />
+      <IconButton sx={{ color: "white", mr: 1 }}>
+        <FilterList />
+      </IconButton>
+    </Box>
+    <Button
+      variant="contained"
+      sx={{
+        backgroundColor: "#0060D1",
+        color: "white",
+        padding: "0.5em 1em",
+        borderRadius: "10px",
+        textTransform: "none",
+        '&:hover': { backgroundColor: "#004BB5" }
+      }}
+    >
+      + Add User
+    </Button>
+  </Box>
+</Box>
       <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
         <TableContainer
           component={Paper}
