@@ -41,3 +41,15 @@ export const GET_ALL_USER = gql`
   }
 `;
 
+export const GET_CURRENT_USER = gql`
+query Me {
+  me {
+    _id
+    firstName
+    lastName
+    email
+    profileImage
+    role
+  }
+}
+`;

@@ -11,9 +11,27 @@ import Box from "@mui/material/Box";
 import Image from "next/image";
 import { Tooltip } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { parseCookies } from "nookies";
+import { GET_CURRENT_USER } from "../(queries)/queries";
+import { useQuery } from "@apollo/client";
 
 export default function Navbar() {
+  const cookies = parseCookies();
+  const token = cookies.accessToken;
+
   const router = useRouter();
+  const { loading, error, data } = useQuery(GET_CURRENT_USER, {
+    context: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+  if (loading) {
+    console.log(loading);
+  }
+  if (error) console.log(error.message);
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
@@ -68,11 +86,14 @@ export default function Navbar() {
             >
               Users
             </Button>
-            <Avatar
-              alt="User Avatar"
-              src="/static/images/avatar/1.jpg"
-              sx={{ marginLeft: 2 }}
-            />
+            {data ? <Button
+              color="inherit"
+              sx={{ color: "white" }}
+              onClick={() => router.push("/users")}
+            >
+              {data.me.firstName} {'>'}
+            </Button> : <Button sx={{ color: "white" }}>user</Button>}
+            
           </Box>
         </Toolbar>
       </AppBar>
