@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { parseCookies } from "nookies";
 import { GET_CURRENT_USER } from "../(queries)/queries";
 import { useQuery } from "@apollo/client";
+import UserProfile from "./userProfile";
 
 export default function Navbar() {
   const cookies = parseCookies();
@@ -74,25 +75,20 @@ export default function Navbar() {
             {" "}
             <Button
               color="inherit"
-              sx={{ color: "white" }}
+              sx={{ color: "white", fontSize: 13  }}
               onClick={() => router.push("/jobs")}
             >
               Jobs
             </Button>
             <Button
               color="inherit"
-              sx={{ color: "white" }}
+              sx={{ color: "white", fontSize: 13  }}
               onClick={() => router.push("/users")}
             >
               Users
             </Button>
-            {data ? <Button
-              color="inherit"
-              sx={{ color: "white" }}
-              onClick={() => router.push("/users")}
-            >
-              {data.me.firstName} {'>'}
-            </Button> : <Button sx={{ color: "white" }}>user</Button>}
+            {data ? <UserProfile name={data.me.firstName}/>
+             : <Button sx={{ color: "white" }}>user</Button>}
             
           </Box>
         </Toolbar>
