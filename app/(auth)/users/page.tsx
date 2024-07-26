@@ -2,13 +2,14 @@
 import Navbar from "@/app/(conponants)/NavBar";
 import React, { useEffect, useState } from "react";
 import { GET_ALL_USER } from "@/app/(queries)/queries";
-import { useQuery } from "@apollo/client";
-
+import { useMutation, useQuery } from "@apollo/client";
+import { ADD_USER } from "@/app/(queries)/queries";
 import {
   Box,
   Button,
   IconButton,
   InputBase,
+  MenuItem,
   Pagination,
   PaginationItem,
   Skeleton,
@@ -18,11 +19,19 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  Modal,
+  Typography,
+  Avatar,
 } from "@mui/material";
 import Paper from "@mui/material/Paper";
 import { parseCookies } from "nookies";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FilterList, Search } from "@mui/icons-material";
+import { CameraAlt, FilterList, Search } from "@mui/icons-material";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import UserTable from "@/app/(conponants)/UserTable";
 function Users() {
   const router = useRouter();
   const cookies = parseCookies();
@@ -35,11 +44,34 @@ function Users() {
 
   const [offset, setOffset] = useState((page - 1) * 10);
   const [search, setSearch] = useState(searchParam);
+  const [open, setOpen] = useState(false);
+  const [createUser] = useMutation(ADD_USER);
+  const [newUser, setNewUser] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "",
+  });
+
+  const schema = z.object({
+    firstName: z.string().nonempty({ message: "First Name is required" }),
+    lastName: z.string().nonempty({ message: "Last Name is required" }),
+    email: z.string().email({ message: "Enter a valid email address" }),
+    role: z.string().nonempty({ message: "Role is required" }),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+  } = useForm({
+    resolver: zodResolver(schema),
+  });
 
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
     router.push(`/users?search=${event.target.value}&page=${page}`);
-
   };
 
   const { loading, error, data, refetch } = useQuery(GET_ALL_USER, {
@@ -72,34 +104,44 @@ function Users() {
     return () => clearTimeout(delayDebounceFn);
   }, [search, refetch]);
 
-  if (loading) {
-    return (
-      <>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh", // Adjust the height as needed
-          }}
-        >
-          <Skeleton
-            variant="rectangular"
-            sx={{
-              width: "80%",
-              height: "90%",
-              backgroundColor: "#0D1A3B",
-              mt: 10,
-            }}
-          />
-        </Box>
-      </>
-    );
-  }
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setNewUser({ ...newUser, [name]: value });
+  };
+  const handleAddUser = async(data) => {
+    try {
+      const { firstName, lastName, email, role } = data;
+      await createUser({
+        variables: {
+          input: {
+            firstName,
+            lastName,
+            email,
+            role,
+          },
+        },
+        context: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      });
+      handleClose();
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
+  };
+
   if (error) return <p>Error: {error.message}</p>;
 
-
-  const { getAllUser, getAllUserCount } = data;
+  const { getAllUser = [], getAllUserCount = 0 } = data || {};
   const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
     const newOffset = (value - 1) * 10;
     setOffset(newOffset);
@@ -107,136 +149,249 @@ function Users() {
   };
   return (
     <div>
-    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}>
-  <p>Total: {getAllUserCount}</p>
-  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: "#2C3757",
-        borderRadius: "20px",
-        py: "2px",
-        px: 2,
-        color: "white",
-        width: "55vh",
-      }}
-    >
-      <Search sx={{ ml: 1 }} />
-      <InputBase
-        onChange={handleSearchChange}
-        placeholder="Search"
-        value={search}
-
-        sx={{
-          mx: 1,
-          flex: 1,
-          color: "white",
-          '&::placeholder': { color: "white" },
-        }}
-      />
-      <IconButton sx={{ color: "white", mr: 1 }}>
-        <FilterList />
-      </IconButton>
-    </Box>
-    <Button
-      variant="contained"
-      sx={{
-        backgroundColor: "#0060D1",
-        color: "white",
-        padding: "0.5em 1em",
-        borderRadius: "10px",
-        textTransform: "none",
-        '&:hover': { backgroundColor: "#004BB5" }
-      }}
-    >
-      + Add User
-    </Button>
-  </Box>
-</Box>
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-        <TableContainer
-          component={Paper}
-          sx={{ width: "90%", borderRadius: 4, pr: 2, mx: 12 }}
-        >
-          <Table aria-label="simple table">
-            <TableHead>
-              <TableRow sx={{ borderBottom: "2px solid #e0e0e0" }}>
-                <TableCell sx={{ width: "20%" }}>First Name</TableCell>
-                <TableCell sx={{ width: "20%" }}>Last Name</TableCell>
-                <TableCell sx={{ width: "30%" }}>Email</TableCell>
-                <TableCell sx={{ width: "20%" }}>Role</TableCell>
-                <TableCell sx={{ width: "10%" }} align="right">
-                  Action
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {getAllUser.map((user) => (
-                <TableRow
-                  key={user._id}
-                  sx={{ ":hover": { backgroundColor: "rgb(236, 236, 236)" } }}
-                >
-                  <TableCell
-                    sx={{ color: "rgb(112, 112, 112)", padding: "26px" }}
-                  >
-                    {user.firstName}
-                  </TableCell>
-                  <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                    {user.lastName}
-                  </TableCell>
-                  <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                    {user.email}
-                  </TableCell>
-                  <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                    {user.role}
-                  </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: "bold", color: "rgb(112, 112, 112)" }}
-                    align="right"
-                  >
-                    ...
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-      <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-        <Pagination
-          count={Math.ceil(getAllUserCount / 10)}
-          shape="rounded"
-          color="primary"
-          page={parseInt(page)}
-          onChange={handleChange}
-          renderItem={(item) => (
-            <PaginationItem
-              components={{
-                previous: () => <span>{"< "}Previous</span>,
-                next: () => <span>Next {">"}</span>,
-              }}
-              {...item}
+      <Box
+        sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}
+      >
+        <p>Total: {getAllUserCount}</p>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: "#2C3757",
+              borderRadius: "20px",
+              py: "2px",
+              px: 2,
+              color: "white",
+              width: "55vh",
+            }}
+          >
+            <Search sx={{ ml: 1 }} />
+            <InputBase
+              onChange={handleSearchChange}
+              placeholder="Search"
+              value={search}
               sx={{
-                "&.MuiPaginationItem-root": {
-                  color: "#e0e0e0", // Text color for the pagination items
-                },
-                "&.Mui-selected": {
-                  backgroundColor: "#0060D1", // Background color for the selected pagination item
-                },
+                mx: 1,
+                flex: 1,
+                color: "white",
+                "&::placeholder": { color: "white" },
               }}
             />
-          )}
+            <IconButton sx={{ color: "white", mr: 1 }}>
+              <FilterList />
+            </IconButton>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={handleOpen}
+            sx={{
+              backgroundColor: "#0060D1",
+              color: "white",
+              padding: "0.5em 1em",
+              borderRadius: "10px",
+              textTransform: "none",
+              "&:hover": { backgroundColor: "#004BB5" },
+            }}
+          >
+            + Add User
+          </Button>
+        </Box>
+      </Box>
+      {loading ?  
+      <>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh", // Adjust the height as needed
+        }}
+      >
+        <Skeleton
+          variant="rectangular"
           sx={{
-            "& .MuiPaginationItem-root": {
-              color: "#e0e0e0", // Text color for the pagination items
-            },
-            "& .Mui-selected": {
-              backgroundColor: "#0060D1", // Background color for the selected pagination item
-            },
+            width: "80%",
+            height: "90%",
+            backgroundColor: "#0D1A3B",
+            mt: 10,
           }}
         />
       </Box>
+    </> :
+    <UserTable
+        users={getAllUser}
+        userCount={getAllUserCount}
+        page={page}
+        handleChange={handleChange}
+      />}
+     
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: "50%",
+            height: "100%",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "#0D1A3B",
+              height: "84px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: 4,
+            }}
+          >
+            <Typography
+              id="modal-title"
+              variant="h6"
+              component="h2"
+              sx={{ color: "white" }}
+            >
+              Add User
+            </Typography>
+            <Typography
+              id="modal-title"
+              variant="h6"
+              component="h2"
+              sx={{ color: "white", cursor: "pointer" }}
+              onClick={handleClose}
+            >
+              X
+            </Typography>
+          </Box>
+          <Box sx={{p:4}}>
+            <Avatar
+              sx={{
+                width: 156,
+                height: 156,
+              }}
+            />
+            <IconButton
+              sx={{
+                position: "relative",
+                bottom: "50px",
+                left: "120px",
+                backgroundColor: "#0060D1",
+                border: "1px solid #ccc",
+              }}
+            >
+              <CameraAlt sx={{ color: "white" }} />
+            </IconButton>
+
+            </Box>
+          <Box
+            component="form"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              px: 4,
+            }}
+            noValidate
+            autoComplete="off"
+          >
+           
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+                mb: 2,
+              }}
+            >
+              <TextField
+                required
+                id="firstName"
+                label="First Name"
+                name="firstName"
+                {...register("firstName")}
+                error={!!errors.firstName}
+                helperText={errors.firstName?.message}
+                sx={{ width: "48%" }}
+              />
+              <TextField
+                required
+                id="lastName"
+                label="Last Name"
+                name="lastName"
+                {...register("lastName")}
+                error={!!errors.lastName}
+                helperText={errors.lastName?.message}
+                sx={{ width: "48%" }}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+                mb: 2,
+              }}
+            >
+              <TextField
+                required
+                id="email"
+                label="Email"
+                name="email"
+                {...register("email")}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                sx={{ width: "48%" }}
+              />
+              <TextField
+                required
+                id="role"
+                label="Role"
+                name="role"
+                select
+                {...register("role")}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+                sx={{ width: "48%" }}
+              >
+                <MenuItem value="ADMIN">Admin</MenuItem>
+                <MenuItem value="HR">HR Personnel</MenuItem>
+                <MenuItem value="HIRING_MANAGER">Hiring Manager</MenuItem>
+              </TextField>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                mt: 3,
+                alignContent: "flex-end",
+                width: "100%",
+                borderTop: "1px solid rgb(236, 236, 236)",
+                position: "absolute",
+                bottom: 0,
+              }}
+            >
+              <Button onClick={handleClose} variant="outlined" sx={{m:1, py:1, width:'23%', borderRadius: '10px', color:'black', borderColor:'black'}}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit(handleAddUser)} variant="contained" sx={{m:1, py:1, width:'23%', borderRadius: '10px', backgroundColor: "#0060D1",}}>
+                Save
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 }

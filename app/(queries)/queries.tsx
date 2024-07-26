@@ -53,3 +53,14 @@ query Me {
   }
 }
 `;
+export const ADD_USER = gql`
+mutation CreateAdminUser($input: CreateAdminUserInput!) {
+  createAdminUser(input: $input) {
+    firstName
+    lastName
+    email
+    role
+    _id
+  }
+}
+`;
