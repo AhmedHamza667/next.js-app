@@ -3,28 +3,19 @@ import Navbar from "@/app/(conponants)/NavBar";
 import React, { useEffect, useState } from "react";
 import { GET_ALL_USER } from "@/app/(queries)/queries";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_USER } from "@/app/(queries)/queries";
+import { ADD_USER, UPDATE_USER } from "@/app/(queries)/queries";
 import {
   Box,
   Button,
   IconButton,
   InputBase,
   MenuItem,
-  Pagination,
-  PaginationItem,
-  Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
   Modal,
+  TextField,
   Typography,
   Avatar,
+  Skeleton,
 } from "@mui/material";
-import Paper from "@mui/material/Paper";
 import { parseCookies } from "nookies";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CameraAlt, FilterList, Search } from "@mui/icons-material";
@@ -32,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import UserTable from "@/app/(conponants)/UserTable";
+
 function Users() {
   const router = useRouter();
   const cookies = parseCookies();
@@ -45,7 +37,10 @@ function Users() {
   const [offset, setOffset] = useState((page - 1) * 10);
   const [search, setSearch] = useState(searchParam);
   const [open, setOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false); // Track if the modal is in edit mode
+  const [selectedUser, setSelectedUser] = useState(null); // Track the user being edited
   const [createUser] = useMutation(ADD_USER);
+  const [updateUser] = useMutation(UPDATE_USER); // Mutation for updating user
   const [newUser, setNewUser] = useState({
     firstName: "",
     lastName: "",
@@ -64,7 +59,7 @@ function Users() {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
+    reset,
   } = useForm({
     resolver: zodResolver(schema),
   });
@@ -92,6 +87,7 @@ function Users() {
       },
     },
   });
+
   useEffect(() => {
     refetch();
   }, [offset, refetch]);
@@ -110,12 +106,12 @@ function Users() {
 
   const handleClose = () => {
     setOpen(false);
+    setEditMode(false); // Reset edit mode on close
+    setSelectedUser(null); // Clear selected user on close
+    reset(); // Reset form fields
   };
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewUser({ ...newUser, [name]: value });
-  };
-  const handleAddUser = async(data) => {
+
+  const handleAddUser = async (data) => {
     try {
       const { firstName, lastName, email, role } = data;
       await createUser({
@@ -139,19 +135,57 @@ function Users() {
     }
   };
 
+  const handleEditUser = async (data) => {
+    try {
+      const { firstName, lastName, email, role } = data;
+      await updateUser({
+        variables: {
+          input: {
+            _id: selectedUser._id,
+            firstName,
+            lastName,
+            email,
+          },
+        },
+        context: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      });
+      handleClose();
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
+
+  const handleOpenEditModal = (user) => {
+    setSelectedUser(user);
+    setNewUser({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+    });
+    setEditMode(true);
+    setOpen(true);
+  };
+
+  
   if (error) return <p>Error: {error.message}</p>;
 
+
   const { getAllUser = [], getAllUserCount = 0 } = data || {};
+
   const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
     const newOffset = (value - 1) * 10;
     setOffset(newOffset);
     router.push(`/users?page=${value}`);
   };
+
   return (
     <div>
-      <Box
-        sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}>
         <p>Total: {getAllUserCount}</p>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box
@@ -198,35 +232,36 @@ function Users() {
           </Button>
         </Box>
       </Box>
-      {loading ?  
-      <>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh", // Adjust the height as needed
-        }}
-      >
-        <Skeleton
-          variant="rectangular"
+      {loading ? (
+        <Box
           sx={{
-            width: "80%",
-            height: "90%",
-            backgroundColor: "#0D1A3B",
-            mt: 10,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh", // Adjust the height as needed
           }}
+        >
+          <Skeleton
+            variant="rectangular"
+            sx={{
+              width: "80%",
+              height: "90%",
+              backgroundColor: "#0D1A3B",
+              mt: 10,
+            }}
+          />
+        </Box>
+      ) : (
+        <UserTable
+          users={getAllUser}
+          userCount={getAllUserCount}
+          page={page}
+          handleChange={handleChange}
+          onEditUser={handleOpenEditModal} // Pass the function to open the edit modal
         />
-      </Box>
-    </> :
-    <UserTable
-        users={getAllUser}
-        userCount={getAllUserCount}
-        page={page}
-        handleChange={handleChange}
-      />}
-     
-      <Modal
+      )}
+
+<Modal
         open={open}
         onClose={handleClose}
         aria-labelledby="modal-title"
@@ -261,7 +296,7 @@ function Users() {
               component="h2"
               sx={{ color: "white" }}
             >
-              Add User
+              {editMode ? "Edit User" : "Add User"}
             </Typography>
             <Typography
               id="modal-title"
@@ -318,20 +353,24 @@ function Users() {
                 required
                 id="firstName"
                 label="First Name"
-                name="firstName"
+                
                 {...register("firstName")}
-                error={!!errors.firstName}
-                helperText={errors.firstName?.message}
+                defaultValue={editMode ? newUser.firstName : ""}
+              error={!!errors.firstName}
+              helperText={errors.firstName ? errors.firstName.message : ""}
+
                 sx={{ width: "48%" }}
               />
               <TextField
                 required
                 id="lastName"
                 label="Last Name"
-                name="lastName"
+                
                 {...register("lastName")}
-                error={!!errors.lastName}
-                helperText={errors.lastName?.message}
+                defaultValue={editMode ? newUser.lastName : ""}
+              error={!!errors.lastName}
+              helperText={errors.lastName ? errors.lastName.message : ""}
+
                 sx={{ width: "48%" }}
               />
             </Box>
@@ -348,21 +387,25 @@ function Users() {
                 required
                 id="email"
                 label="Email"
-                name="email"
+              
                 {...register("email")}
-                error={!!errors.email}
-                helperText={errors.email?.message}
+                defaultValue={editMode ? newUser.email : ""}
+              error={!!errors.email}
+              helperText={errors.email ? errors.email.message : ""}
+
                 sx={{ width: "48%" }}
               />
               <TextField
                 required
                 id="role"
                 label="Role"
-                name="role"
                 select
                 {...register("role")}
-                error={!!errors.role}
-                helperText={errors.role?.message}
+                defaultValue={editMode ? newUser.role : ""}
+                disabled={editMode}
+              error={!!errors.role}
+              helperText={errors.role ? errors.role.message : ""}
+
                 sx={{ width: "48%" }}
               >
                 <MenuItem value="ADMIN">Admin</MenuItem>
@@ -385,7 +428,7 @@ function Users() {
               <Button onClick={handleClose} variant="outlined" sx={{m:1, py:1, width:'23%', borderRadius: '10px', color:'black', borderColor:'black'}}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit(handleAddUser)} variant="contained" sx={{m:1, py:1, width:'23%', borderRadius: '10px', backgroundColor: "#0060D1",}}>
+              <Button onClick={handleSubmit(editMode ? handleEditUser : handleAddUser)} variant="contained" sx={{m:1, py:1, width:'23%', borderRadius: '10px', backgroundColor: "#0060D1",}}>
                 Save
               </Button>
             </Box>

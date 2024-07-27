@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,12 +10,37 @@ import {
   Box,
   Pagination,
   PaginationItem,
+  IconButton,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-const UserTable = ({ users, userCount, page, handleChange }) => {
+
+const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
   const router = useRouter();
-  
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const handleMenuOpen = (event, user) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedUser(user);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedUser(null);
+  };
+
+  const handleEditClick = () => {
+    if (selectedUser) {
+      onEditUser(selectedUser);
+    }
+    handleMenuClose();
+  };
+
+
   return (
     <Box sx={{ display: "flex", flexDirection:'column', justifyContent: "center", mt: 3 }}>
       <TableContainer
@@ -55,10 +80,22 @@ const UserTable = ({ users, userCount, page, handleChange }) => {
                   {user.role}
                 </TableCell>
                 <TableCell
-                  sx={{ fontWeight: "bold", color: "rgb(112, 112, 112)", pr:10 }}
+                  sx={{ fontWeight: "bold", color: "rgb(112, 112, 112)", pr: 10 }}
                   align="right"
                 >
-                  ...
+                  <IconButton
+                    onClick={(event) => handleMenuOpen(event, user)}
+                    size="small"
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                  >
+                    <MenuItem onClick={handleEditClick}>Edit</MenuItem>
+                  </Menu>
                 </TableCell>
               </TableRow>
             ))}

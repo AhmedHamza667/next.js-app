@@ -64,3 +64,16 @@ mutation CreateAdminUser($input: CreateAdminUserInput!) {
   }
 }
 `;
+
+export const UPDATE_USER = gql`
+mutation UpdateUser($input: UpdateUserInput!) {
+  updateUser(input: $input) {
+    _id
+    firstName
+    lastName
+    profileImage
+    email
+    role
+  }
+}
+`;
