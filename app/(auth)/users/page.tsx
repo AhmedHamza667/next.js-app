@@ -37,8 +37,10 @@ function Users() {
   const [offset, setOffset] = useState((page - 1) * 10);
   const [search, setSearch] = useState(searchParam);
   const [open, setOpen] = useState(false);
+  const [filterModal, setFilterModal] = useState(false);
   const [editMode, setEditMode] = useState(false); // Track if the modal is in edit mode
   const [selectedUser, setSelectedUser] = useState(null); // Track the user being edited
+  const [roleFilter, setRoleFilter] = useState("");
   const [createUser] = useMutation(ADD_USER);
   const [updateUser] = useMutation(UPDATE_USER); // Mutation for updating user
   const [newUser, setNewUser] = useState({
@@ -46,22 +48,7 @@ function Users() {
     lastName: "",
     email: "",
     role: "",
-  });
-
-  const schema = z.object({
-    firstName: z.string().nonempty({ message: "First Name is required" }),
-    lastName: z.string().nonempty({ message: "Last Name is required" }),
-    email: z.string().email({ message: "Enter a valid email address" }),
-    role: z.string().nonempty({ message: "Role is required" }),
-  });
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
-    resolver: zodResolver(schema),
+    profileImage: "",
   });
 
   const handleSearchChange = (event) => {
@@ -72,14 +59,14 @@ function Users() {
   const { loading, error, data, refetch } = useQuery(GET_ALL_USER, {
     variables: {
       search,
-      filter: {},
+      filter: roleFilter ? { role: roleFilter } : null,
       sort: {
         _id: -1,
       },
       limit: 10,
       offset,
       getAllUserCountSearch2: search || null,
-      getAllUserCountFilter2: {},
+      getAllUserCountFilter2: roleFilter ? { role: roleFilter } : null,
     },
     context: {
       headers: {
@@ -87,10 +74,36 @@ function Users() {
       },
     },
   });
+  const addSchema = z.object({
+    firstName: z.string().min(1, { message: "First Name is required" }),
+    lastName: z.string().min(1, { message: "Last Name is required" }),
+    email: z.string().email({ message: "Enter a valid email address" }),
+    role: z.string().min(1, { message: "Role is required" }),
+  });
+
+  const editSchema = z.object({
+    firstName: z.string().min(1, { message: "First Name is required" }),
+    lastName: z.string().min(1, { message: "Last Name is required" }),
+    email: z.string().email({ message: "Enter a valid email address" }),
+    role: z.string().optional(),
+  });
+
+  const schema = editMode ? editSchema : addSchema;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      role: newUser.role,
+    },
+  });
 
   useEffect(() => {
     refetch();
-  }, [offset, refetch]);
+  }, [offset, roleFilter, refetch]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -108,6 +121,14 @@ function Users() {
     setOpen(false);
     setEditMode(false); // Reset edit mode on close
     setSelectedUser(null); // Clear selected user on close
+    reset(); // Reset form fields
+  };
+  const handleFilterOpen = () => {
+    setFilterModal(true);
+  };
+
+  const handleFilterClose = () => {
+    setFilterModal(false);
     reset(); // Reset form fields
   };
 
@@ -166,14 +187,19 @@ function Users() {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
+      profileImage: user.profileImage,
     });
     setEditMode(true);
     setOpen(true);
   };
+  const handleModalSubmit = (data) => {
+    console.log("Modal submitted with data:", data);
+    setRoleFilter(data.role);
+    console.log(data.role);
+    setFilterModal(false);
+  };
 
-  
   if (error) return <p>Error: {error.message}</p>;
-
 
   const { getAllUser = [], getAllUserCount = 0 } = data || {};
 
@@ -185,7 +211,9 @@ function Users() {
 
   return (
     <div>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}>
+      <Box
+        sx={{ display: "flex", justifyContent: "space-between", mt: 4, mx: 12 }}
+      >
         <p>Total: {getAllUserCount}</p>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box
@@ -212,7 +240,10 @@ function Users() {
                 "&::placeholder": { color: "white" },
               }}
             />
-            <IconButton sx={{ color: "white", mr: 1 }}>
+            <IconButton
+              sx={{ color: "white", mr: 1 }}
+              onClick={handleFilterOpen}
+            >
               <FilterList />
             </IconButton>
           </Box>
@@ -260,8 +291,7 @@ function Users() {
           onEditUser={handleOpenEditModal} // Pass the function to open the edit modal
         />
       )}
-
-<Modal
+      <Modal
         open={open}
         onClose={handleClose}
         aria-labelledby="modal-title"
@@ -308,13 +338,32 @@ function Users() {
               X
             </Typography>
           </Box>
-          <Box sx={{p:4}}>
-            <Avatar
-              sx={{
-                width: 156,
-                height: 156,
-              }}
-            />
+         
+          <Box
+            component="form"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              px: 4,
+            }}
+            noValidate
+            autoComplete="off"
+          >
+             <Box sx={{ pt: 4 }}>
+            {editMode && newUser.profileImage ? (
+              <img
+                src={newUser.profileImage}
+                alt="Profile Image"
+                style={{
+                  width: 156,
+                  height: 156,
+                  borderRadius: "50%", // add this to make it a circle
+                }}
+              />
+            ) : (
+              <Avatar sx={{ width: 156, height: 156 }} />
+            )}
+
             <IconButton
               sx={{
                 position: "relative",
@@ -326,20 +375,7 @@ function Users() {
             >
               <CameraAlt sx={{ color: "white" }} />
             </IconButton>
-
-            </Box>
-          <Box
-            component="form"
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              px: 4,
-            }}
-            noValidate
-            autoComplete="off"
-          >
-           
+          </Box>
             <Box
               sx={{
                 display: "flex",
@@ -353,24 +389,20 @@ function Users() {
                 required
                 id="firstName"
                 label="First Name"
-                
                 {...register("firstName")}
                 defaultValue={editMode ? newUser.firstName : ""}
-              error={!!errors.firstName}
-              helperText={errors.firstName ? errors.firstName.message : ""}
-
+                error={!!errors.firstName}
+                helperText={errors.firstName ? errors.firstName.message : ""}
                 sx={{ width: "48%" }}
               />
               <TextField
                 required
                 id="lastName"
                 label="Last Name"
-                
                 {...register("lastName")}
                 defaultValue={editMode ? newUser.lastName : ""}
-              error={!!errors.lastName}
-              helperText={errors.lastName ? errors.lastName.message : ""}
-
+                error={!!errors.lastName}
+                helperText={errors.lastName ? errors.lastName.message : ""}
                 sx={{ width: "48%" }}
               />
             </Box>
@@ -384,15 +416,13 @@ function Users() {
               }}
             >
               <TextField
-                required
+                required={!editMode}
                 id="email"
                 label="Email"
-              
                 {...register("email")}
                 defaultValue={editMode ? newUser.email : ""}
-              error={!!errors.email}
-              helperText={errors.email ? errors.email.message : ""}
-
+                error={!!errors.email}
+                helperText={errors.email ? errors.email.message : ""}
                 sx={{ width: "48%" }}
               />
               <TextField
@@ -403,9 +433,8 @@ function Users() {
                 {...register("role")}
                 defaultValue={editMode ? newUser.role : ""}
                 disabled={editMode}
-              error={!!errors.role}
-              helperText={errors.role ? errors.role.message : ""}
-
+                error={!!errors.role}
+                helperText={errors.role ? errors.role.message : ""}
                 sx={{ width: "48%" }}
               >
                 <MenuItem value="ADMIN">Admin</MenuItem>
@@ -418,6 +447,7 @@ function Users() {
                 display: "flex",
                 justifyContent: "flex-end",
                 mt: 3,
+                pr: 5,
                 alignContent: "flex-end",
                 width: "100%",
                 borderTop: "1px solid rgb(236, 236, 236)",
@@ -425,11 +455,141 @@ function Users() {
                 bottom: 0,
               }}
             >
-              <Button onClick={handleClose} variant="outlined" sx={{m:1, py:1, width:'23%', borderRadius: '10px', color:'black', borderColor:'black'}}>
+              <Button
+                onClick={handleClose}
+                variant="outlined"
+                sx={{
+                  m: 1,
+                  py: 1,
+                  width: "23%",
+                  borderRadius: "10px",
+                  color: "black",
+                  borderColor: "black",
+                }}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSubmit(editMode ? handleEditUser : handleAddUser)} variant="contained" sx={{m:1, py:1, width:'23%', borderRadius: '10px', backgroundColor: "#0060D1",}}>
+              <Button
+                onClick={handleSubmit(
+                  editMode ? handleEditUser : handleAddUser
+                )}
+                variant="contained"
+                sx={{
+                  m: 1,
+                  py: 1,
+                  width: "23%",
+                  borderRadius: "10px",
+                  backgroundColor: "#0060D1",
+                }}
+              >
                 Save
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* filter modal */}
+      {/* filter modal */}
+      <Modal
+        open={filterModal}
+        onClose={handleFilterClose}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 600,
+            bgcolor: "background.paper",
+            borderRadius: "8px",
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <Typography
+            id="modal-title"
+            variant="h5"
+            component="h2"
+            sx={{ mb: 2, color: "black" }}
+          >
+            Filter
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(handleModalSubmit)}
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            noValidate
+            autoComplete="off"
+          >
+            <TextField
+              required
+              id="role"
+              label="Role"
+              select
+              fullWidth
+              {...register("role")}
+              error={!!errors.role}
+              helperText={errors.role ? errors.role.message : ""}
+            >
+              <MenuItem value="ADMIN">Admin</MenuItem>
+              <MenuItem value="HR">HR Personnel</MenuItem>
+              <MenuItem value="HIRING_MANAGER">Hiring Manager</MenuItem>
+            </TextField>
+
+            <Box
+              sx={{
+                display: "flex",
+                pt: 2,
+                borderTop: "1px solid rgb(236, 236, 236)",
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <Button
+                  variant="text"
+                  sx={{
+                    textTransform: "none",
+                    textDecoration: "underline",
+                    color: "#000",
+                    fontWeight: "light",
+                  }}
+                  onClick={() => {
+                    setRoleFilter(null);
+                    setFilterModal(false);
+                  }}
+                >
+                  Reset Filter
+                </Button>
+              </Box>
+              <Button
+                variant="outlined"
+                sx={{
+                  m: 1,
+                  py: 1,
+                  width: "33%",
+                  borderRadius: "10px",
+                  color: "black",
+                  borderColor: "black",
+                }}
+                onClick={handleFilterClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                sx={{
+                  m: 1,
+                  py: 1,
+                  width: "33%",
+                  borderRadius: "10px",
+                  backgroundColor: "#0060D1",
+                }}
+              >
+                Apply
               </Button>
             </Box>
           </Box>
