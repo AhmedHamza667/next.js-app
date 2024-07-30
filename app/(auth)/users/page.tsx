@@ -22,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import UserTable from "@/app/(conponants)/UserTable";
-
+import { useAWSUpload } from "@/app/(lib)/AWSUpload";
 function Users() {
   const router = useRouter();
   const cookies = parseCookies();
@@ -34,7 +34,7 @@ function Users() {
   const roleRef = useRef(null);
 
   const page = pageNum || 1;
-
+  const { uploadToS3 } = useAWSUpload(); 
   const [offset, setOffset] = useState((page - 1) * 10);
   const [search, setSearch] = useState(searchParam);
   const [open, setOpen] = useState(false);
@@ -143,6 +143,7 @@ function Users() {
             lastName,
             email,
             role,
+            profileImage: newUser.profileImage, 
           },
         },
         context: {
@@ -167,6 +168,7 @@ function Users() {
             firstName,
             lastName,
             email,
+            profileImage: newUser.profileImage, 
           },
         },
         context: {
@@ -201,6 +203,17 @@ function Users() {
     router.push(`/users?search=${search||''}&page=${page}&role=${formData.role}`);
     setFilterModal(false);
   };
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const fileName = await uploadToS3(file, "PROFILE");
+      setNewUser((prevUser) => ({
+        ...prevUser,
+        profileImage: fileName,
+      }));
+    }
+  };
+
 
   if (error) return <p>Error: {error.message}</p>;
 
@@ -367,17 +380,24 @@ function Users() {
               <Avatar sx={{ width: 156, height: 156 }} />
             )}
 
-            <IconButton
-              sx={{
-                position: "relative",
-                bottom: "50px",
-                left: "120px",
-                backgroundColor: "#0060D1",
-                border: "1px solid #ccc",
-              }}
-            >
-              <CameraAlt sx={{ color: "white" }} />
-            </IconButton>
+<IconButton
+  sx={{
+    position: "relative",
+    bottom: "50px",
+    left: "120px",
+    backgroundColor: "#0060D1",
+    border: "1px solid #ccc",
+  }}
+  component="label"
+>
+  <CameraAlt sx={{ color: "white" }} />
+  <input
+    type="file"
+    hidden
+    onChange={handleFileChange}
+  />
+</IconButton>
+
           </Box>
             <Box
               sx={{
@@ -444,6 +464,7 @@ function Users() {
                 <MenuItem value="HR">HR Personnel</MenuItem>
                 <MenuItem value="HIRING_MANAGER">Hiring Manager</MenuItem>
               </TextField>
+              
             </Box>
             <Box
               sx={{
