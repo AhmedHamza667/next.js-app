@@ -1,9 +1,8 @@
 "use client";
-import Navbar from "@/app/(conponants)/NavBar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GET_ALL_USER } from "@/app/(queries)/queries";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_USER, UPDATE_USER } from "@/app/(queries)/queries";
+import { ADD_USER, UPDATE_USER, GET_SIGNED_URL } from "@/app/(queries)/queries";
 import {
   Box,
   Button,
@@ -31,6 +30,8 @@ function Users() {
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search");
   const pageNum = searchParams.get("page");
+  const roleParam = searchParams.get("role");
+  const roleRef = useRef(null);
 
   const page = pageNum || 1;
 
@@ -40,7 +41,7 @@ function Users() {
   const [filterModal, setFilterModal] = useState(false);
   const [editMode, setEditMode] = useState(false); // Track if the modal is in edit mode
   const [selectedUser, setSelectedUser] = useState(null); // Track the user being edited
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState(roleParam);
   const [createUser] = useMutation(ADD_USER);
   const [updateUser] = useMutation(UPDATE_USER); // Mutation for updating user
   const [newUser, setNewUser] = useState({
@@ -192,10 +193,12 @@ function Users() {
     setEditMode(true);
     setOpen(true);
   };
-  const handleModalSubmit = (data) => {
-    console.log("Modal submitted with data:", data);
-    setRoleFilter(data.role);
-    console.log(data.role);
+  const handleModalSubmit = () => {
+    const formData = {
+      role: roleRef.current.value,
+    };
+    setRoleFilter(formData.role);
+    router.push(`/users?search=${search||''}&page=${page}&role=${formData.role}`);
     setFilterModal(false);
   };
 
@@ -206,7 +209,7 @@ function Users() {
   const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
     const newOffset = (value - 1) * 10;
     setOffset(newOffset);
-    router.push(`/users?page=${value}`);
+    router.push(`/users?page=${value}&search=${search||''}&role=${roleFilter||''}`);
   };
 
   return (
@@ -529,6 +532,7 @@ function Users() {
               required
               id="role"
               label="Role"
+              inputRef={roleRef}
               select
               fullWidth
               {...register("role")}
@@ -579,7 +583,7 @@ function Users() {
                 Cancel
               </Button>
               <Button
-                type="submit"
+                onClick={(handleModalSubmit)}
                 variant="contained"
                 sx={{
                   m: 1,

@@ -77,3 +77,9 @@ mutation UpdateUser($input: UpdateUserInput!) {
   }
 }
 `;
+
+export const GET_SIGNED_URL = gql`
+  query GetSignedUrl($fileName: String!, $fileType: FileType!) {
+    getSignedUrl(fileName: $fileName, fileType: $fileType)
+  }
+`;
