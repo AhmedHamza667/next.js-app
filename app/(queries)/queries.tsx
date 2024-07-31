@@ -83,3 +83,39 @@ export const GET_SIGNED_URL = gql`
     getSignedUrl(fileName: $fileName, fileType: $fileType)
   }
 `;
+
+
+export const GET_ALL_JOB = gql`
+query GetAllJob(
+  $search: String
+  $filter: JSON
+  $sort: JSON
+  $limit: Int
+  $offset: Int
+) {
+  getAllJob(
+    search: $search
+    filter: $filter
+    sort: $sort
+    limit: $limit
+    offset: $offset
+  ) {
+    _id
+    jobCode
+    jobTitle
+    jobCategory {
+      _id
+      categoryName
+      __typename
+    }
+    startDate
+    endDate
+    status
+    applicationsCount
+    interviewsCount
+    createdById
+    lastAssignedToIds
+    __typename
+  }
+  getAllJobCount(search: $search, filter: $filter)
+}`;

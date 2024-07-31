@@ -18,27 +18,21 @@ import { useRouter } from "next/navigation";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 
-const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
+const JobTable = ({ jobs, jobCount, page, handleChange }) => {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
 
-  const handleMenuOpen = (event, user) => {
+  const handleMenuOpen = (event, job) => {
     setAnchorEl(event.currentTarget);
-    setSelectedUser(user);
+    // setSelectedJob(job);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSelectedUser(null);
+    // setSelectedJob(null);
   };
 
-  const handleEditClick = () => {
-    if (selectedUser) {
-      onEditUser(selectedUser);
-    }
-    handleMenuClose();
-  };
 
 
   return (
@@ -50,41 +44,57 @@ const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
         <Table aria-label="simple table">
           <TableHead>
             <TableRow sx={{ borderBottom: "2px solid #e0e0e0" }}>
-              <TableCell sx={{ width: "20%" }}>First Name</TableCell>
-              <TableCell sx={{ width: "20%" }}>Last Name</TableCell>
-              <TableCell sx={{ width: "30%" }}>Email</TableCell>
-              <TableCell sx={{ width: "20%" }}>Role</TableCell>
+              <TableCell sx={{ width: "10%" }}>Job ID</TableCell>
+              <TableCell sx={{ width: "15%" }}>Job Name</TableCell>
+              <TableCell sx={{ width: "15%" }}>Category</TableCell>
+              <TableCell sx={{ width: "10%" }}>Applications</TableCell>
+              <TableCell sx={{ width: "10%" }}>Interviews</TableCell>
+              <TableCell sx={{ width: "10%" }}>Start Date</TableCell>
+              <TableCell sx={{ width: "10%" }}>End Date</TableCell>
+              <TableCell sx={{ width: "10%" }}>Status</TableCell>
               <TableCell sx={{ width: "10%", pr:10  }} align="right">
                 Action
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
+            {jobs.map((job) => (
               <TableRow
-                key={user._id}
+                key={job._id}
                 sx={{ ":hover": { backgroundColor: "rgb(236, 236, 236)" } }}
               >
+                <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
+                  {job.jobCode}
+                </TableCell>
                 <TableCell
                   sx={{ color: "rgb(112, 112, 112)", padding: "26px" }}
                 >
-                  {user.firstName}
+                  {job.jobTitle}
                 </TableCell>
                 <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                  {user.lastName}
+                  {job.jobCategory.categoryName}
                 </TableCell>
                 <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                  {user.email}
+                  {job.applicationsCount}
                 </TableCell>
                 <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
-                  {user.role}
+                  {job.interviewsCount}
+                </TableCell>
+                <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
+                  {job.startDate}
+                </TableCell>
+                <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
+                  {job.endDate}
+                </TableCell>
+                <TableCell sx={{ color: "rgb(112, 112, 112)" }}>
+                  {job.status}
                 </TableCell>
                 <TableCell
                   sx={{ fontWeight: "bold", color: "rgb(112, 112, 112)", pr: 10 }}
                   align="right"
                 >
                   <IconButton
-                    onClick={(event) => handleMenuOpen(event, user)}
+                    onClick={(event) => handleMenuOpen(event, job)}
                     size="small"
                   >
                     <MoreVertIcon />
@@ -94,15 +104,17 @@ const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
                     MenuListProps={{
-                      sx: {
-                        padding: 0, // Remove padding from the MenuList
-                      },
-                    }}
+                        sx: {
+                          padding: 0, // Remove padding from the MenuList
+                        },
+                      }}
                   >
-                    <MenuItem onClick={handleEditClick} sx={{bgcolor: '#0D1A3B', color: '#6A7186',
-                  '&:hover': {
+                    <MenuItem sx={{bgcolor: '#0D1A3B', color: '#6A7186', '&:hover': {
                     backgroundColor: '#0D1A3B', // Same as normal background color to disable hover effect
-                  }, }}>Edit</MenuItem>
+                  },}}>Edit</MenuItem>
+                    <MenuItem sx={{bgcolor: '#0D1A3B', color: '#6A7186', '&:hover': {
+                    backgroundColor: '#0D1A3B', // Same as normal background color to disable hover effect
+                  },}}>Delete</MenuItem>
                   </Menu>
                 </TableCell>
               </TableRow>
@@ -112,7 +124,7 @@ const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
       </TableContainer>
       <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
       <Pagination
-          count={Math.ceil(userCount / 10)}
+          count={Math.ceil(jobCount / 10)}
           shape="rounded"
           color="primary"
           page={parseInt(page)}
@@ -148,4 +160,4 @@ const UserTable = ({ users, userCount, page, handleChange, onEditUser }) => {
   );
 };
 
-export default UserTable;
+export default JobTable;
