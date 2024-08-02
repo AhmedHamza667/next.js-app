@@ -119,3 +119,73 @@ query GetAllJob(
   }
   getAllJobCount(search: $search, filter: $filter)
 }`;
+
+export const GET_ALL_JOB_CATEGORY = gql`
+query GetAllJobCategory(
+  $search: String
+  $limit: Int
+  $offset: Int
+  $sort: JSON
+) {
+  getAllJobCategory(
+    search: $search
+    limit: $limit
+    offset: $offset
+    sort: $sort
+  ) {
+    _id
+    categoryName
+    __typename
+  }
+  getAllJobCategoryCount(search: $search)
+}`;
+
+export const GET_ALL_HIRING_MANAGER = gql`
+query GetAllHiringManagerUser(
+  $search: String
+  $filter: JSON
+  $limit: Int
+  $offset: Int
+  $sort: JSON
+) {
+  getAllUser(
+    search: $search
+    filter: $filter
+    limit: $limit
+    offset: $offset
+    sort: $sort
+  ) {
+    _id
+    firstName
+    lastName
+    role
+    email
+    __typename
+  }
+  getAllUserCount(search: $search, filter: $filter)
+}
+`;
+export const GET_ALL_HR_USER = gql`
+query GetAllHRUser(
+  $search: String
+  $filter: JSON
+  $limit: Int
+  $offset: Int
+  $sort: JSON
+) {
+  getAllUser(
+    search: $search
+    filter: $filter
+    limit: $limit
+    offset: $offset
+    sort: $sort
+  ) {
+    _id
+    firstName
+    lastName
+    role
+    email
+    __typename
+  }
+  getAllUserCount(search: $search, filter: $filter)
+}`;

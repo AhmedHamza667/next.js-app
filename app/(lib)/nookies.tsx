@@ -8,11 +8,11 @@ export const createCookie = (
 ) => {
   setCookie(ctx, "accessToken", accessToken, {
     path: "/",
-    maxAge: 3600,
+    maxAge: 5400,
   });
   setCookie(ctx, "refreshToken", refreshToken, {
     path: "/",
-    maxAge: 3600,
+    maxAge: 5400,
   });
 };
 
