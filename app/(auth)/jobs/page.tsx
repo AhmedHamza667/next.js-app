@@ -105,95 +105,77 @@ function Jobs() {
   });
 
 
-  const handleScrollCategory = (e) => {
+  const handleScroll = (e, fetchMoreFunction, items, setItems, itemKey) => {
     const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
     if (bottom && !loading) {
-      categoryFetchMore({
-        variables: {
-          categoryOffset: categories.length,
-        },
+      fetchMoreFunction({
+        variables: { offset: items.length },
         updateQuery: (previousResult, { fetchMoreResult }) => {
           if (!fetchMoreResult) return previousResult;
-          const updatedCategories = [
-            ...previousResult.getAllJobCategory,
-            ...fetchMoreResult.getAllJobCategory,
-          ];
-          setCategories(updatedCategories);
-          return {
-            ...previousResult,
-            getAllJobCategory: updatedCategories,
-          };
+          const updatedItems = [...previousResult[itemKey], ...fetchMoreResult[itemKey]];
+          setItems(updatedItems);
+          return { ...previousResult, [itemKey]: updatedItems };
         },
       });
     }
   };
 
-  const handleScrollHiringManager = (e) => {
-    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-    if (bottom && !loading) {
-      hiringManagerFetchMore({
-        variables: {
-          offset: hiringManagers.length,
-        },
-        updateQuery: (previousResult, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return previousResult;
-          const updatedManagers = [
-            ...previousResult.getAllUser,
-            ...fetchMoreResult.getAllUser,
-          ];
-          setHiringManagers(updatedManagers);
-          return {
-            ...previousResult,
-            getAllUser: updatedManagers,
-          };
-        },
-      });
-    }
-  };
-  const handleScrollHR = (e) => {
-    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-    if (bottom && !loading) {
-      hrFetchMore({
-        variables: {
-          offset: hrUsers.length,
-        },
-        updateQuery: (previousResult, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return previousResult;
-          const updatedHrUsers = [
-            ...previousResult.getAllUser,
-            ...fetchMoreResult.getAllUser,
-          ];
-          setHrUsers(updatedHrUsers);
-          return {
-            ...previousResult,
-            getAllUser: updatedHrUsers,
-          };
-        },
-      });
-    }
-  };
+  const handleScrollCategory = (e) => handleScroll(e, categoryFetchMore, categories, setCategories, 'getAllJobCategory');
+  const handleScrollHiringManager = (e) => handleScroll(e, hiringManagerFetchMore, hiringManagers, setHiringManagers, 'getAllUser');
+  const handleScrollHR = (e) => handleScroll(e, hrFetchMore, hrUsers, setHrUsers, 'getAllUser');
 
-  
   const schema = z.object({
-    firstName: z.string().min(1, { message: "First Name is required" }),
-    lastName: z.string().min(1, { message: "Last Name is required" }),
-    email: z.string().email({ message: "Enter a valid email address" }),
-    role: z.string().min(1, { message: "Role is required" }),
+    category: z.string().optional(),
+    status: z.string().optional(),
+    "hiring-manager": z.string().optional(),
+    "hr-user": z.string().optional(),
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    control
-  } = useForm({
+  const { control, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(schema),
   });
 
+  const onSubmit = (data) => {
+    const filters = {};
+    if (data.category) filters.categoryId = data.category;
+    if (data.status) filters.status = data.status;
+    if (data['hiring-manager']) {
+      filters.$or = [
+        {
+          createdById: {
+            $in: [data['hiring-manager']],
+          },
+        },
+        {
+          lastAssignedToIds: {
+            $in: [data['hiring-manager']],
+          },
+        },
+      ];
+    }
+    if (data['hr-user']) {
+      filters.$or = [
+        {
+          createdById: {
+            $in: [data['hr-user']],
+          },
+        },
+        {
+          lastAssignedToIds: {
+            $in: [data['hr-user']],
+          },
+        },
+      ];
+    }
+      console.log("Filters:", filters);
+    refetch({ filter: filters });
+    router.push(`/jobs?page=1&search=${search||''}`);
+    setFilterModal(false);
+  };
+
   useEffect(() => {
     refetch();
-  }, [offset, refetch]);
+  }, [offset, search, refetch]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -212,13 +194,17 @@ function Jobs() {
     setFilterModal(false);
     reset(); // Reset form fields
   };
-
+  const handleFilterReset = () => {
+    setFilterModal(false);
+    reset(); // Reset form fields
+    router.push(`/jobs?page=${page}&search=${search || ''}`);
+  };
+  
 
 
   if (error) return <p>Error: {error.message}</p>;
 
   const { getAllJob = [], getAllJobCount = 0 } = data || {};
-console.log(getAllJob)
   const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
     const newOffset = (value - 1) * 10;
     setOffset(newOffset);
@@ -278,6 +264,215 @@ console.log(getAllJob)
           </Button>
         </Box>
       </Box>
+        {/* filter modal */}
+  <Modal
+  open={filterModal}
+  onClose={handleFilterClose}
+  aria-labelledby="modal-title"
+  aria-describedby="modal-description"
+>
+  <Box
+    sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 600,
+      bgcolor: 'background.paper',
+      borderRadius: '8px',
+      boxShadow: 24,
+      p: 4,
+    }}
+  >
+    <Typography
+      id="modal-title"
+      variant="h5"
+      component="h2"
+      sx={{ mb: 2, color: 'black' }}
+    >
+      Filter
+    </Typography>
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} noValidate autoComplete="off">
+
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <Controller
+            name="category"
+            control={control}
+            defaultValue={''}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Category"
+                select
+                fullWidth
+                onScroll={handleScrollCategory}
+                error={!!errors.category}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      style: {
+                        maxHeight: '330px', // Approximately 9 items
+                        overflowY: 'auto',
+                      },
+                      onScroll: handleScrollCategory,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">Select a category</MenuItem>
+                {categories.map((category) => (
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.categoryName}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Controller
+            name="status"
+            control={control}
+            defaultValue={''}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Status"
+                select
+                fullWidth
+                error={!!errors.status}
+              >
+                <MenuItem value="">Select a status</MenuItem>
+                <MenuItem value="OPEN">Open</MenuItem>
+                <MenuItem value="CLOSED">Closed</MenuItem>
+                <MenuItem value="DRAFT">Draft</MenuItem>
+              </TextField>
+            )}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Controller
+            name="hiring-manager"
+            control={control}
+            defaultValue={''}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Hiring Manager"
+                select
+                fullWidth
+                onScroll={handleScrollHiringManager}
+                error={!!errors['hiring-manager']}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      style: {
+                        maxHeight: '330px', // Adjust the height as needed
+                      },
+                      onScroll: handleScrollHiringManager,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">Select a hiring manager</MenuItem>
+                {hiringManagers.map((manager) => (
+                  <MenuItem key={manager._id} value={manager._id}>
+                    {manager.firstName} {manager.lastName}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Controller
+            name="hr-user"
+            control={control}
+            defaultValue={''}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="HR"
+                select
+                fullWidth
+                onScroll={handleScrollHR}
+                error={!!errors['hr-user']}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      style: {
+                        maxHeight: '330px', // Adjust the height as needed
+                      },
+                      onScroll: handleScrollHR,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="">Select an HR user</MenuItem>
+                {hrUsers.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    {user.firstName} {user.lastName}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Grid>
+      </Grid>
+      <Box
+        sx={{
+          display: 'flex',
+          pt: 2,
+          borderTop: '1px solid rgb(236, 236, 236)',
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="text"
+            sx={{
+              textTransform: 'none',
+              textDecoration: 'underline',
+              color: '#000',
+              fontWeight: 'light',
+            }}
+            onClick={handleFilterReset}
+          >
+            Reset Filter
+          </Button>
+        </Box>
+        <Button
+          variant="outlined"
+          sx={{
+            m: 1,
+            py: 1,
+            width: '33%',
+            borderRadius: '10px',
+            color: 'black',
+            borderColor: 'black',
+          }}
+          onClick={handleFilterClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          sx={{
+            m: 1,
+            py: 1,
+            width: '33%',
+            borderRadius: '10px',
+            backgroundColor: '#0060D1',
+          }}
+        >
+          Apply
+        </Button>
+      </Box>
+    </Box>
+  </Box>
+</Modal>    
+
       {loading ? (
         <Box
           sx={{
@@ -306,198 +501,7 @@ console.log(getAllJob)
         />
       )}
      
-      {/* filter modal */}
-      <Modal
-      open={filterModal}
-      onClose={handleFilterClose}
-      aria-labelledby="modal-title"
-      aria-describedby="modal-description"
-    >
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 600,
-          bgcolor: 'background.paper',
-          borderRadius: '8px',
-          boxShadow: 24,
-          p: 4,
-        }}
-      >
-        <Typography
-          id="modal-title"
-          variant="h5"
-          component="h2"
-          sx={{ mb: 2, color: 'black' }}
-        >
-          Filter
-        </Typography>
-        <Box
-          component="form"
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-          noValidate
-          autoComplete="off"
-        >
-          <Grid container spacing={2}>
-          <Grid item xs={6}>
-              <Controller
-                name="category"
-                control={control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Category"
-                    select
-                    fullWidth
-                    onScroll={handleScrollCategory}
-                    error={!!errors.category}
-                    SelectProps={{
-                      MenuProps: {
-                        PaperProps: {
-                          style: {
-                            maxHeight: '330px', // Approximately 9 items
-                            overflowY: 'auto',
-                          },
-                          onScroll: handleScrollCategory,
-                        },
-                      },
-                    }}
-                  >
-                    {categories.map((category) => (
-                      <MenuItem key={category._id} value={category._id}>
-                        {category.categoryName}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                required
-                id="status"
-                label="Status"
-                select
-                fullWidth
-                {...register('status')}
-                error={!!errors.status}
-              >
-                <MenuItem value="OPEN">Open</MenuItem>
-                <MenuItem value="CLOSED">Closed</MenuItem>
-                <MenuItem value="DRAFT">Draft</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={6}>
-            <TextField
-      id="hiring-manager"
-      label="Hiring Manager"
-      select
-      fullWidth
-      onScroll={handleScrollHiringManager}
-      SelectProps={{
-        MenuProps: {
-          PaperProps: {
-            style: {
-              maxHeight: '330px', // Adjust the height as needed
-            },
-            onScroll: handleScrollHiringManager,
-          },
-        },
-      }}
-    >
-      {hiringManagers.map((manager) => (
-        <MenuItem key={manager._id} value={manager._id}>
-          {manager.firstName} {manager.lastName}
-        </MenuItem>
-      ))}
-    </TextField>
-            </Grid>
-            <Grid item xs={6}>
-            <TextField
-          id="hr-user"
-          label="HR"
-          select
-          fullWidth
-          onScroll={handleScrollHR}
-          SelectProps={{
-            MenuProps: {
-              PaperProps: {
-                style: {
-                  maxHeight: '330px', // Adjust the height as needed
-                },
-                onScroll: handleScrollHR,
-              },
-            },
-          }}
-        >
-          {hrUsers.map((user) => (
-            <MenuItem key={user._id} value={user._id}>
-              {user.firstName} {user.lastName}
-            </MenuItem>
-          ))}
-        </TextField>
-            </Grid>
-          </Grid>
-
-          <Box
-            sx={{
-              display: 'flex',
-              pt: 2,
-              borderTop: '1px solid rgb(236, 236, 236)',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Button
-                variant="text"
-                sx={{
-                  textTransform: 'none',
-                  textDecoration: 'underline',
-                  color: '#000',
-                  fontWeight: 'light',
-                }}
-                onClick={() => {
-                  setFilterModal(false);
-                }}
-              >
-                Reset Filter
-              </Button>
-            </Box>
-            <Button
-              variant="outlined"
-              sx={{
-                m: 1,
-                py: 1,
-                width: '33%',
-                borderRadius: '10px',
-                color: 'black',
-                borderColor: 'black',
-              }}
-              onClick={handleFilterClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              sx={{
-                m: 1,
-                py: 1,
-                width: '33%',
-                borderRadius: '10px',
-                backgroundColor: '#0060D1',
-              }}
-              onClick={() => {
-                // handle apply logic here
-              }}
-            >
-              Apply
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-    </Modal>    </div>
+</div>
   );
 }
 

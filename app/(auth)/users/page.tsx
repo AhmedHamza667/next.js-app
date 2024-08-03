@@ -200,7 +200,7 @@ function Users() {
       role: roleRef.current.value,
     };
     setRoleFilter(formData.role);
-    router.push(`/users?search=${search||''}&page=${page}&role=${formData.role}`);
+    router.push(`/users?search=${search||''}&page=1&role=${formData.role}`);
     setFilterModal(false);
   };
   const handleFileChange = async (event) => {
