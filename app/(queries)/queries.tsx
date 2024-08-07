@@ -189,3 +189,84 @@ query GetAllHRUser(
   }
   getAllUserCount(search: $search, filter: $filter)
 }`;
+
+export const CREATE_JOB = gql`
+mutation CreateJob($data: CreateJobInput!) {
+  createJob(data: $data) {
+    _id
+    jobCode
+    jobTitle
+    jobCategory {
+      _id
+      categoryName
+      __typename
+    }
+    startDate
+    endDate
+    status
+    applicationsCount
+    interviewsCount
+    categoryId
+    __typename
+  }
+}`;
+
+export const GET_JOB_BY_ID = gql`
+query GetJobById($id: ID!) {
+  getJobById(_id: $id) {
+    _id
+    categoryId
+    jobCategory {
+      _id
+      categoryName
+      __typename
+    }
+    employmentType
+    endDate
+    jobCode
+    jobDescription
+    jobLocation
+    jobTitle
+    seniorityLevel
+    startDate
+    status
+    workspaceType
+    createdById
+    createdBy {
+      _id
+      firstName
+      lastName
+      __typename
+    }
+    lastAssignedTos {
+      _id
+      email
+      firstName
+      lastName
+      role
+      __typename
+    }
+    emailConfiguration {
+      interviewCompletionEmailTemplate
+      interviewScheduleEmailTemplate
+      rejectionTemplate
+      __typename
+    }
+    __typename
+  }
+}
+`;
+export const GET_ONE_INTERVIEW_QUESTION = gql`
+query GetOneInterviewQuestion($filter: JSON, $sort: JSON) {
+  getOneInterviewQuestion(filter: $filter, sort: $sort) {
+    _id
+    jobId
+    questions {
+      questionIndex
+      question
+      systemAnswer
+      __typename
+    }
+    __typename
+  }
+}`;

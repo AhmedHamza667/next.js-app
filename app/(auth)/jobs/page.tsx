@@ -250,6 +250,7 @@ function Jobs() {
             </IconButton>
           </Box>
           <Button
+            onClick={()=> router.push('/jobs/CreateJob')}
             variant="contained"
             sx={{
               backgroundColor: "#0060D1",

@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noNavRoutes = ["/login", "/otp"]
+  const noNavRoutes = ["/login", "/otp", "/jobs/CreateJob"]
   return (
     <html lang="en">
       <body className={inter.className}>
