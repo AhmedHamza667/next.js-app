@@ -5,7 +5,7 @@ import { styled } from '@mui/system';
 import CreateJobNavBar from '@/app/(conponants)/CreateJobNavBar';
 import StepOne from './(steps)/StepOne';
 import StepTwo from './(steps)/StepTwo';
-// import StepThree from '.(steps)/StepThree';
+import StepThree from './(steps)/StepThree';
 // import StepFour from './(steps)/StepFour';
 
 const FormContainer = styled(Paper)({
@@ -38,8 +38,8 @@ const CreateJob = () => {
         return <StepOne handleNext={handleNext} />;
       case 1:
         return <StepTwo handleNext={handleNext} />;
-      // case 2:
-      //   return <StepThree formData={formData} setFormData={setFormData} />;
+      case 2:
+        return <StepThree handleNext={handleNext} />;
       // case 3:
       //   return <StepFour formData={formData} setFormData={setFormData} />;
       default:

@@ -270,3 +270,14 @@ query GetOneInterviewQuestion($filter: JSON, $sort: JSON) {
     __typename
   }
 }`;
+
+export const CREATE_MANY_SCREENING_QUESTIONS = gql`
+mutation CreateManyScreeningQuestion(
+  $datas: [CreateScreeningQuestionInput!]!
+  $jobId: ID!
+) {
+  createManyScreeningQuestion(datas: $datas, jobId: $jobId) {
+    _id
+    __typename
+  }
+}`;
